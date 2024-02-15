@@ -96,15 +96,22 @@
                 const data = await response.json();
 
                 if (data && data.data && data.data.length > 0) {
-                    const rol = data.data[0].rol;
+                    const roles = data.data.map(entry => ({ rol: entry.rol, direccion: entry.direccion })); // Obtener roles y direcciones
                     const rolParrafo = document.createElement('p');
-                    rolParrafo.textContent = 'ROL: ' + rol;
+                    rolParrafo.textContent = 'Roles y Direcciones:';
                     resultadosContainer.appendChild(rolParrafo);
+
+                    // Mostrar cada rol y su dirección
+                    roles.forEach(({ rol, direccion }) => {
+                        const rolItem = document.createElement('p');
+                        rolItem.textContent = `ROL: ${rol}, Dirección: ${direccion}`;
+                        resultadosContainer.appendChild(rolItem);
+                    });
                 } else {
-                    console.error("No se encontró el ROL en la respuesta.");
+                    console.error("No se encontraron roles en la respuesta.");
                 }
             } catch (error) {
-                console.error('Error al obtener el ROL:', error);
+                console.error('Error al obtener los roles:', error);
             }
         }
 
