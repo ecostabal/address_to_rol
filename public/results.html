@@ -60,15 +60,15 @@
             const comunaCodigo = obtenerCodigoComuna(comunasData.comunas, comuna);
             const tipoPropiedadCodigos = {
                 "departamento": "2",
-                "casa": "0",
-                "oficina": "5",
+                "casa": "1",
+                "oficina": "3",
                 "localComercial": "11"
             };
             const detalle = tipoPropiedadCodigos[tipoPropiedad.toLowerCase()] || "";
 
             const requestData = {
                 metaData: {
-                    namespace: "cl.sii.sdi.lob.bbrr.mapas.data.api.interfaces.MapasFacadeService/getPrediosDireccion",
+                    namespace: "cl.sii.sdi.lob.bbrr.mapas.data.apiinterfaces.MapasFacadeService/getPrediosDireccion",
                     conversationId: "UNAUTHENTICATED-CALL88.24.70.131",
                     transactionId: "4ecac281-61eb-0b83-d82d-fd9ec998b7e1"
                 },
@@ -83,6 +83,8 @@
                     }
                 }
             };
+
+            console.log('Datos enviados al servicio del SII:', requestData); // Agregar console.log
 
             try {
                 const response = await fetch(url, {
