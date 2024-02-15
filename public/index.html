@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Búsqueda de Direcciones</title>
+</head>
+<body>
+    <h1>Búsqueda de Direcciones</h1>
+    <input id="direccion" type="text" placeholder="Ingrese su dirección" required>
+    <input id="numeroUnidad" type="text" placeholder="Número de unidad (opcional)">
+    
+    <!-- Selector para el tipo de propiedad -->
+    <select id="tipoPropiedad" required>
+        <option value="casa">Casa</option>
+        <option value="departamento">Departamento</option>
+        <option value="oficina">Oficina</option>
+        <option value="localComercial">Local Comercial</option>
+    </select>
+
+    <div id="lista-recomendaciones"></div>
+    <button onclick="buscarResultados()">Buscar</button>
+
+    <script>
+        function initAutocomplete() {
+            var input = document.getElementById('direccion');
+            var autocomplete = new google.maps.places.Autocomplete(input);
+
+            autocomplete.addListener('place_changed', function() {
+                var place = autocomplete.getPlace();
+                if (!place.geometry) {
+                    return;
+                }
+                // Aquí puedes hacer lo que necesites con la información del lugar seleccionado
+            });
+        }
+
+        function buscarResultados() {
+            var direccion = document.getElementById('direccion').value;
+            var numeroUnidad = document.getElementById('numeroUnidad').value;
+            var tipoPropiedad = document.getElementById('tipoPropiedad').value; // Obtenemos el tipo de propiedad seleccionado
+            // Llamamos a la función para obtener los detalles de la dirección y pasamos el número de unidad y tipo de propiedad
+            obtenerDetallesDireccion(direccion, numeroUnidad, tipoPropiedad);
+        }
+
+        function obtenerDetallesDireccion(direccion, numeroUnidad, tipoPropiedad) {
+            var geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ 'address': direccion }, function(results, status) {
+                if (status === 'OK') {
+                    if (results[0]) {
+                        var calle = obtenerComponenteDireccion(results[0], 'route');
+                        var numero = obtenerComponenteDireccion(results[0], 'street_number');
+                        var comuna = obtenerComponenteDireccion(results[0], 'locality');
+
+                        // Redireccionar a la página de resultados con parámetros detallados incluyendo el número de unidad y tipo de propiedad
+                        window.location.href = `/results.html?calle=${encodeURIComponent(calle)}&numero=${encodeURIComponent(numero)}&comuna=${encodeURIComponent(comuna)}&unidad=${encodeURIComponent(numeroUnidad)}&tipoPropiedad=${encodeURIComponent(tipoPropiedad)}`;
+                    } else {
+                        console.log('No se encontraron resultados para la dirección ingresada');
+                    }
+                } else {
+                    console.log('Error al geocodificar la dirección: ' + status);
+                }
+            });
+        }
+
+        function obtenerComponenteDireccion(resultado, tipo) {
+            for (var i = 0; i < resultado.address_components.length; i++) {
+                var componente = resultado.address_components[i];
+                if (componente.types.includes(tipo)) {
+                    return componente.long_name;
+                }
+            }
+            return '';
+        }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBb9F2ifr5mw4L5RAH9J4iGNSbWMpjfZXw&libraries=places&callback=initAutocomplete"
+        async defer></script>
+</body>
+</html>

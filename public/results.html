@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados</title>
+</head>
+<body>
+    <h1>Resultados</h1>
+    <div id="resultados-container"></div>
+
+    <script>
+        // Declarar la variable globalmente
+        let resultadosContainer;
+
+        // Definir el contenido del JSON directamente
+        const comunasData = {
+            "comunas": [
+                {"nombre": "SANTIAGO", "codigo": 13101},
+                {"nombre": "SANTIAGO OESTE", "codigo": 13134},
+                {"nombre": "SANTIAGO SUR", "codigo": 13135},
+                {"nombre": "CERRILLOS", "codigo": 14166},
+                {"nombre": "CERRO NAVIA", "codigo": 14156},
+                {"nombre": "COLINA", "codigo": 14201},
+                {"nombre": "CONCHALI", "codigo": 14127},
+                {"nombre": "ESTACION CENTRAL", "codigo": 14157},
+                {"nombre": "HUECHURABA", "codigo": 14158},
+                {"nombre": "INDEPENDENCIA", "codigo": 13167},
+                {"nombre": "LA FLORIDA", "codigo": 15128},
+                {"nombre": "LA REINA", "codigo": 15132},
+                {"nombre": "LAMPA", "codigo": 14202},
+                {"nombre": "LAS CONDES", "codigo": 15108},
+                {"nombre": "LO BARNECHEA", "codigo": 15161},
+                {"nombre": "LO PRADO", "codigo": 14155},
+                {"nombre": "MACUL", "codigo": 15151},
+                {"nombre": "MAIPU", "codigo": 14109},
+                {"nombre": "NUNOA", "codigo": 15105},
+                {"nombre": "PENALOLEN", "codigo": 15152},
+                {"nombre": "PROVIDENCIA", "codigo": 15103},
+                {"nombre": "PUDAHUEL", "codigo": 14111},
+                {"nombre": "QUILICURA", "codigo": 14114},
+                {"nombre": "QUINTA NORMAL", "codigo": 14107},
+                {"nombre": "RECOLETA", "codigo": 13159},
+                {"nombre": "RENCA", "codigo": 14114},
+                {"nombre": "TIL-TIL", "codigo": 14203},
+                {"nombre": "VITACURA", "codigo": 15160}
+            ]
+        };
+
+        // Función para obtener los parámetros de la URL
+        function obtenerParametroUrl(parametro) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(parametro) || 'No disponible';
+        }
+
+        // Función para realizar la solicitud al servicio del SII a través de CORS Hijacker
+        async function fetchRol(calle, numero, comuna, unidad, tipoPropiedad) {
+            const url = `https://cors-hijacker.vercel.app/api?url=${encodeURIComponent('https://www4.sii.cl/mapasui/services/data/mapasFacadeService/getPrediosDireccion')}`;
+
+            const comunaCodigo = obtenerCodigoComuna(comunasData.comunas, comuna);
+            const tipoPropiedadCodigos = {
+                "departamento": "2",
+                "casa": "0",
+                "oficina": "5",
+                "localComercial": "11"
+            };
+            const detalle = tipoPropiedadCodigos[tipoPropiedad.toLowerCase()] || "";
+
+            const requestData = {
+                metaData: {
+                    namespace: "cl.sii.sdi.lob.bbrr.mapas.data.api.interfaces.MapasFacadeService/getPrediosDireccion",
+                    conversationId: "UNAUTHENTICATED-CALL88.24.70.131",
+                    transactionId: "4ecac281-61eb-0b83-d82d-fd9ec998b7e1"
+                },
+                data: {
+                    rolDireccion: {
+                        comuna: comunaCodigo,
+                        nombreComuna: comuna,
+                        calle: calle,
+                        numeroCalleStr: numero,
+                        detalle: detalle,
+                        numeroDetalleStr: unidad
+                    }
+                }
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const data = await response.json();
+
+                if (data && data.data && data.data.length > 0) {
+                    const rol = data.data[0].rol;
+                    const rolParrafo = document.createElement('p');
+                    rolParrafo.textContent = 'ROL: ' + rol;
+                    resultadosContainer.appendChild(rolParrafo);
+                } else {
+                    console.error("No se encontró el ROL en la respuesta.");
+                }
+            } catch (error) {
+                console.error('Error al obtener el ROL:', error);
+            }
+        }
+
+        // Función para mostrar los resultados en la página
+        async function mostrarResultados() {
+            const calle = obtenerParametroUrl('calle');
+            const numero = obtenerParametroUrl('numero');
+            const comuna = obtenerParametroUrl('comuna');
+            const unidad = obtenerParametroUrl('unidad');
+            const tipoPropiedad = obtenerParametroUrl('tipoPropiedad');
+            const rol = obtenerParametroUrl('rol');
+
+            resultadosContainer = document.getElementById('resultados-container');
+
+            const tipoPropiedadParrafo = document.createElement('p');
+            tipoPropiedadParrafo.textContent = 'Tipo: ' + (tipoPropiedad.charAt(0).toUpperCase() + tipoPropiedad.slice(1)); // Asegura que la primera letra sea mayúscula
+            resultadosContainer.appendChild(tipoPropiedadParrafo);
+
+            const calleParrafo = document.createElement('p');
+            calleParrafo.textContent = 'Calle: ' + calle;
+            resultadosContainer.appendChild(calleParrafo);
+
+            const numeroParrafo = document.createElement('p');
+            numeroParrafo.textContent = 'Nº: ' + numero;
+            resultadosContainer.appendChild(numeroParrafo);
+
+            const unidadParrafo = document.createElement('p');
+            unidadParrafo.textContent = 'Nº Unidad: ' + unidad;
+            resultadosContainer.appendChild(unidadParrafo);
+
+            const comunaParrafo = document.createElement('p');
+            comunaParrafo.textContent = 'Comuna: ' + comuna;
+            resultadosContainer.appendChild(comunaParrafo);
+
+            // Realizar solicitud al servicio del SII para obtener el ROL
+            await fetchRol(calle, numero, comuna, unidad, tipoPropiedad);
+        }
+
+        // Función para obtener el código de la comuna a partir del nombre de la comuna
+        function obtenerCodigoComuna(comunas, nombreComuna) {
+    const comunaEncontrada = comunas.find(c => c.nombre.toLowerCase() === nombreComuna.toLowerCase());
+    if (comunaEncontrada) {
+        return comunaEncontrada.codigo.toString();
+    } else {
+        console.error(`No se encontró el código para la comuna: ${nombreComuna}`);
+        return "";
+    }
+}
+
+        // Llamar a la función mostrarResultados para mostrar los resultados al cargar la página
+        mostrarResultados();
+    </script>
+</body>
+</html>
