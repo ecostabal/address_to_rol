@@ -64,11 +64,12 @@
                 "oficina": "3",
                 "localComercial": "11"
             };
-            const detalle = tipoPropiedadCodigos[tipoPropiedad.toLowerCase()] || "";
 
+            const detalle = (unidad && unidad !== 'No disponible') ? tipoPropiedadCodigos[tipoPropiedad.toLowerCase()] || "" : "";
+            
             const requestData = {
                 metaData: {
-                    namespace: "cl.sii.sdi.lob.bbrr.mapas.data.apiinterfaces.MapasFacadeService/getPrediosDireccion",
+                    namespace: "cl.sii.sdi.lob.bbrr.mapas.data.api.interfaces.MapasFacadeService/getPrediosDireccion",
                     conversationId: "UNAUTHENTICATED-CALL88.24.70.131",
                     transactionId: "4ecac281-61eb-0b83-d82d-fd9ec998b7e1"
                 },
@@ -78,13 +79,17 @@
                         nombreComuna: comuna,
                         calle: calle,
                         numeroCalleStr: numero,
-                        detalle: detalle,
-                        numeroDetalleStr: unidad
                     }
                 }
             };
 
-            console.log('Datos enviados al servicio del SII:', requestData); // Agregar console.log
+            // Si hay unidad y es diferente de "No disponible", agrega detalle y numeroDetalleStr al objeto requestData
+            if (unidad && unidad !== 'No disponible') {
+                requestData.data.rolDireccion.detalle = detalle;
+                requestData.data.rolDireccion.numeroDetalleStr = unidad;
+            }
+
+            console.log('Datos enviados al servicio del SII:', requestData);
 
             try {
                 const response = await fetch(url, {
@@ -98,12 +103,11 @@
                 const data = await response.json();
 
                 if (data && data.data && data.data.length > 0) {
-                    const roles = data.data.map(entry => ({ rol: entry.rol, direccion: entry.direccion })); // Obtener roles y direcciones
+                    const roles = data.data.map(entry => ({ rol: entry.rol, direccion: entry.direccion }));
                     const rolParrafo = document.createElement('p');
                     rolParrafo.textContent = 'Roles y Direcciones:';
                     resultadosContainer.appendChild(rolParrafo);
 
-                    // Mostrar cada rol y su dirección
                     roles.forEach(({ rol, direccion }) => {
                         const rolItem = document.createElement('p');
                         rolItem.textContent = `ROL: ${rol}, Dirección: ${direccion}`;
