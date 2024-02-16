@@ -18,16 +18,54 @@
         <option value="localComercial">Local Comercial</option>
     </select>
 
+    <!-- Selector para la comuna -->
+    <select id="comuna" required>
+        <option value="">Seleccione una comuna</option>
+        <option value="CERRILLOS">Cerrillos</option>
+        <option value="CERRO NAVIA">Cerro Navia</option>
+        <option value="COLINA">Colina</option>
+        <option value="CONCHALI">Conchalí</option>
+        <option value="ESTACION CENTRAL">Estación Central</option>
+        <option value="HUECHURABA">Huechuraba</option>
+        <option value="INDEPENDENCIA">Independencia</option>
+        <option value="LA FLORIDA">La Florida</option>
+        <option value="LA REINA">La Reina</option>
+        <option value="LAMPA">Lampa</option>
+        <option value="LAS CONDES">Las Condes</option>
+        <option value="LO BARNECHEA">Lo Barnechea</option>
+        <option value="LO PRADO">Lo Prado</option>
+        <option value="MACUL">Macul</option>
+        <option value="MAIPU">Maipú</option>
+        <option value="ÑUÑOA">Ñuñoa</option>
+        <option value="PENALOLEN">Peñalolén</option>
+        <option value="PROVIDENCIA">Providencia</option>
+        <option value="PUDAHUEL">Pudahuel</option>
+        <option value="QUILICURA">Quilicura</option>
+        <option value="QUINTA NORMAL">Quinta Normal</option>
+        <option value="RECOLETA">Recoleta</option>
+        <option value="RENCA">Renca</option>
+        <option value="SANTIAGO">Santiago</option>
+        <option value="TIL-TIL">Til-Til</option>
+        <option value="VITACURA">Vitacura</option>
+        <option value="VINA DEL MAR">Viña del Mar</option>
+        <option value="VALPARAISO">Valparaíso</option>
+    </select>
+
     <div id="lista-recomendaciones"></div>
     <button onclick="buscarResultados()">Buscar</button>
 
     <script>
         // Importar la API key desde el archivo api_key_google.js
-        const apiKeyGoogle = require('./api_key_google.js');
+        const apiKey = "<%= apiKey %>"; // Acceder a la variable pasada desde el servidor
 
         function initAutocomplete() {
             var input = document.getElementById('direccion');
-            var autocomplete = new google.maps.places.Autocomplete(input);
+            var autocomplete = new google.maps.places.Autocomplete(input, {
+                types: ['geocode'],
+                componentRestrictions: {
+                    country: 'CL', // Código ISO 3166-1 alfa-2 de Chile
+                }
+            });
 
             autocomplete.addListener('place_changed', function() {
                 var place = autocomplete.getPlace();
@@ -38,24 +76,32 @@
             });
         }
 
+
         function buscarResultados() {
             var direccion = document.getElementById('direccion').value;
             var numeroUnidad = document.getElementById('numeroUnidad').value;
-            var tipoPropiedad = document.getElementById('tipoPropiedad').value; // Obtenemos el tipo de propiedad seleccionado
-            // Llamamos a la función para obtener los detalles de la dirección y pasamos el número de unidad y tipo de propiedad
-            obtenerDetallesDireccion(direccion, numeroUnidad, tipoPropiedad);
+            var tipoPropiedad = document.getElementById('tipoPropiedad').value;
+            var comuna = document.getElementById('comuna').value; // Obtenemos la comuna seleccionada
+
+            // Verificamos que se haya seleccionado una comuna
+            if (!comuna) {
+                alert('Por favor seleccione una comuna');
+                return;
+            }
+
+            // Llamamos a la función para obtener los detalles de la dirección y pasamos el número de unidad, tipo de propiedad y comuna
+            obtenerDetallesDireccion(direccion, numeroUnidad, tipoPropiedad, comuna);
         }
 
-        function obtenerDetallesDireccion(direccion, numeroUnidad, tipoPropiedad) {
+        function obtenerDetallesDireccion(direccion, numeroUnidad, tipoPropiedad, comuna) {
             var geocoder = new google.maps.Geocoder();
             geocoder.geocode({ 'address': direccion }, function(results, status) {
                 if (status === 'OK') {
                     if (results[0]) {
                         var calle = obtenerComponenteDireccion(results[0], 'route');
                         var numero = obtenerComponenteDireccion(results[0], 'street_number');
-                        var comuna = obtenerComponenteDireccion(results[0], 'locality');
 
-                        // Redireccionar a la página de resultados con parámetros detallados incluyendo el número de unidad y tipo de propiedad
+                        // Redireccionar a la página de resultados con parámetros detallados incluyendo el número de unidad, tipo de propiedad y comuna
                         window.location.href = `/results.html?calle=${encodeURIComponent(calle)}&numero=${encodeURIComponent(numero)}&comuna=${encodeURIComponent(comuna)}&unidad=${encodeURIComponent(numeroUnidad)}&tipoPropiedad=${encodeURIComponent(tipoPropiedad)}`;
                     } else {
                         console.log('No se encontraron resultados para la dirección ingresada');
@@ -77,7 +123,6 @@
         }
     </script>
     <!-- Importar la API de Google Maps con la API key -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=" + apiKeyGoogle + "&libraries=places&callback=initAutocomplete"
-    async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBb9F2ifr5mw4L5RAH9J4iGNSbWMpjfZXw&libraries=places&callback=initAutocomplete" async defer></script>
 </body>
 </html>
