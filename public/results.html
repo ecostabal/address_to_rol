@@ -44,8 +44,8 @@
                 {"nombre": "RENCA", "codigo": 14114},
                 {"nombre": "TIL-TIL", "codigo": 14203},
                 {"nombre": "VITACURA", "codigo": 15160},
-                {"nombre": "VINA DEL MAR", "codigo": 0o5302},
-                {"nombre": "VALPARAISO", "codigo": 0o5301}
+                {"nombre": "VINA DEL MAR", "codigo": 5302},
+                {"nombre": "VALPARAISO", "codigo": 5301}
             ]
         };
 
@@ -59,7 +59,6 @@
         async function fetchRol(calle, numero, comuna, unidad, tipoPropiedad) {
             const url = `https://cors-hijacker.vercel.app/api?url=${encodeURIComponent('https://www4.sii.cl/mapasui/services/data/mapasFacadeService/getPrediosDireccion')}`;
 
-            const comunaCodigo = obtenerCodigoComuna(comunasData.comunas, comuna);
             const tipoPropiedadCodigos = {
                 "departamento": "2",
                 "casa": "1",
@@ -69,57 +68,119 @@
 
             const detalle = (unidad && unidad !== 'No disponible') ? tipoPropiedadCodigos[tipoPropiedad.toLowerCase()] || "" : "";
             
-            const requestData = {
-                metaData: {
-                    namespace: "cl.sii.sdi.lob.bbrr.mapas.data.api.interfaces.MapasFacadeService/getPrediosDireccion",
-                    conversationId: "UNAUTHENTICATED-CALL88.24.70.131",
-                    transactionId: "4ecac281-61eb-0b83-d82d-fd9ec998b7e1"
-                },
-                data: {
-                    rolDireccion: {
-                        comuna: comunaCodigo,
-                        nombreComuna: comuna,
-                        calle: calle,
-                        numeroCalleStr: numero,
+            // Si la comuna es "Santiago", recorrer las tres comunas asociadas a "Santiago"
+            if (comuna.toLowerCase() === "santiago") {
+                const santiagoComunas = comunasData.comunas.filter(c => c.nombre.includes('SANTIAGO'));
+                for (const santiagoComuna of santiagoComunas) {
+                    const requestData = {
+                        metaData: {
+                            namespace: "cl.sii.sdi.lob.bbrr.mapas.data.api.interfaces.MapasFacadeService/getPrediosDireccion",
+                            conversationId: "UNAUTHENTICATED-CALL88.24.70.131",
+                            transactionId: "4ecac281-61eb-0b83-d82d-fd9ec998b7e1"
+                        },
+                        data: {
+                            rolDireccion: {
+                                comuna: santiagoComuna.codigo.toString(),
+                                nombreComuna: santiagoComuna.nombre,
+                                calle: calle,
+                                numeroCalleStr: numero,
+                            }
+                        }
+                    };
+
+                    // Si hay unidad y es diferente de "No disponible", agrega detalle y numeroDetalleStr al objeto requestData
+                    if (unidad && unidad !== 'No disponible') {
+                        requestData.data.rolDireccion.detalle = detalle;
+                        requestData.data.rolDireccion.numeroDetalleStr = unidad;
+                    }
+
+                    console.log('Datos enviados al servicio del SII:', requestData);
+
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(requestData)
+                        });
+
+                        const data = await response.json();
+
+                        if (data && data.data && data.data.length > 0) {
+                            const roles = data.data.map(entry => ({ rol: entry.rol, direccion: entry.direccion }));
+                            const rolParrafo = document.createElement('p');
+                            rolParrafo.textContent = 'Roles y Direcciones:';
+                            resultadosContainer.appendChild(rolParrafo);
+
+                            roles.forEach(({ rol, direccion }) => {
+                                const rolItem = document.createElement('p');
+                                rolItem.textContent = `ROL: ${rol}, Dirección: ${direccion}`;
+                                resultadosContainer.appendChild(rolItem);
+                            });
+                        } else {
+                            console.error("No se encontraron roles en la respuesta.");
+                        }
+                    } catch (error) {
+                        console.error('Error al obtener los roles:', error);
                     }
                 }
-            };
+            } else {
+                // Si la comuna no es "Santiago", enviar una sola solicitud al servicio del SII
+                const comunaCodigo = obtenerCodigoComuna(comunasData.comunas, comuna);
 
-            // Si hay unidad y es diferente de "No disponible", agrega detalle y numeroDetalleStr al objeto requestData
-            if (unidad && unidad !== 'No disponible') {
-                requestData.data.rolDireccion.detalle = detalle;
-                requestData.data.rolDireccion.numeroDetalleStr = unidad;
-            }
-
-            console.log('Datos enviados al servicio del SII:', requestData);
-
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
+                const requestData = {
+                    metaData: {
+                        namespace: "cl.sii.sdi.lob.bbrr.mapas.data.api.interfaces.MapasFacadeService/getPrediosDireccion",
+                        conversationId: "UNAUTHENTICATED-CALL88.24.70.131",
+                        transactionId: "4ecac281-61eb-0b83-d82d-fd9ec998b7e1"
                     },
-                    body: JSON.stringify(requestData)
-                });
+                    data: {
+                        rolDireccion: {
+                            comuna: comunaCodigo,
+                            nombreComuna: comuna,
+                            calle: calle,
+                            numeroCalleStr: numero,
+                        }
+                    }
+                };
 
-                const data = await response.json();
-
-                if (data && data.data && data.data.length > 0) {
-                    const roles = data.data.map(entry => ({ rol: entry.rol, direccion: entry.direccion }));
-                    const rolParrafo = document.createElement('p');
-                    rolParrafo.textContent = 'Roles y Direcciones:';
-                    resultadosContainer.appendChild(rolParrafo);
-
-                    roles.forEach(({ rol, direccion }) => {
-                        const rolItem = document.createElement('p');
-                        rolItem.textContent = `ROL: ${rol}, Dirección: ${direccion}`;
-                        resultadosContainer.appendChild(rolItem);
-                    });
-                } else {
-                    console.error("No se encontraron roles en la respuesta.");
+                // Si hay unidad y es diferente de "No disponible", agrega detalle y numeroDetalleStr al objeto requestData
+                if (unidad && unidad !== 'No disponible') {
+                    requestData.data.rolDireccion.detalle = detalle;
+                    requestData.data.rolDireccion.numeroDetalleStr = unidad;
                 }
-            } catch (error) {
-                console.error('Error al obtener los roles:', error);
+
+                console.log('Datos enviados al servicio del SII:', requestData);
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+
+                    const data = await response.json();
+
+                    if (data && data.data && data.data.length > 0) {
+                        const roles = data.data.map(entry => ({ rol: entry.rol, direccion: entry.direccion }));
+                        const rolParrafo = document.createElement('p');
+                        rolParrafo.textContent = 'Roles y Direcciones:';
+                        resultadosContainer.appendChild(rolParrafo);
+
+                        roles.forEach(({ rol, direccion }) => {
+                            const rolItem = document.createElement('p');
+                            rolItem.textContent = `ROL: ${rol}, Dirección: ${direccion}`;
+                            resultadosContainer.appendChild(rolItem);
+                        });
+                    } else {
+                        console.error("No se encontraron roles en la respuesta.");
+                    }
+                } catch (error) {
+                    console.error('Error al obtener los roles:', error);
+                }
             }
         }
 
@@ -160,14 +221,14 @@
 
         // Función para obtener el código de la comuna a partir del nombre de la comuna
         function obtenerCodigoComuna(comunas, nombreComuna) {
-    const comunaEncontrada = comunas.find(c => c.nombre.toLowerCase() === nombreComuna.toLowerCase());
-    if (comunaEncontrada) {
-        return comunaEncontrada.codigo.toString();
-    } else {
-        console.error(`No se encontró el código para la comuna: ${nombreComuna}`);
-        return "";
-    }
-}
+            const comunaEncontrada = comunas.find(c => c.nombre.toLowerCase() === nombreComuna.toLowerCase());
+            if (comunaEncontrada) {
+                return comunaEncontrada.codigo.toString();
+            } else {
+                console.error(`No se encontró el código para la comuna: ${nombreComuna}`);
+                return "";
+            }
+        }
 
         // Llamar a la función mostrarResultados para mostrar los resultados al cargar la página
         mostrarResultados();
