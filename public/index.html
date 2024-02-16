@@ -22,6 +22,9 @@
     <button onclick="buscarResultados()">Buscar</button>
 
     <script>
+        // Importar la API key desde el archivo api_key_google.js
+        const apiKeyGoogle = require('./api_key_google.js');
+
         function initAutocomplete() {
             var input = document.getElementById('direccion');
             var autocomplete = new google.maps.places.Autocomplete(input);
@@ -73,7 +76,8 @@
             return '';
         }
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBb9F2ifr5mw4L5RAH9J4iGNSbWMpjfZXw&libraries=places&callback=initAutocomplete"
-        async defer></script>
+    <!-- Importar la API de Google Maps con la API key -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=" + apiKeyGoogle + "&libraries=places&callback=initAutocomplete"
+    async defer></script>
 </body>
 </html>
